@@ -65,7 +65,7 @@ while (height > 0):
 	           format(time, height, speed, fuel_supply))
 	
 	#scale the height to our game window
-        top = prev_height / pericynthion * 600 + 600
+        top = prev_height / pericynthion * 600 - 600
 	
 	#hide the old rockets
         points = [(middle, top), (middle + dimroc , top + dimroc), (middle - dimroc , top + dimroc)]
@@ -73,7 +73,7 @@ while (height > 0):
         screen.blit(rocket_area, (0, 0))
 	
 	#draw our new rocket
-        top = height / pericynthion * 600 + 600
+        top = height / pericynthion * 600 - 600
         points = [(middle, top), (middle + dimroc , top + dimroc), (middle - dimroc , top + dimroc)]
         pygame.draw.lines(rocket_area,red,True,points)
         screen.blit(rocket_area, (0, 0))
