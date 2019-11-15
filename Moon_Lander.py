@@ -82,7 +82,7 @@ while (height > 0):
 	
         if height < 0.0:
 	    break
-		
+        
 if abs(speed) < max_impact_speed:
     print("Landed!")
 else:
