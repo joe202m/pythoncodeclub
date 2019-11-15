@@ -81,9 +81,8 @@ while (height > 0):
         pygame.display.update()	
 	
         if height < 0.0:
-            #explosion.gif
 	    break
-	
+		
 if abs(speed) < max_impact_speed:
     print("Landed!")
 else:
