@@ -30,7 +30,7 @@ time_step = 1.0       # Simulation time step (s)
 time = 0.0
 height = pericynthion
 speed = 0.0
-points = [(middle, top), (middle - dimroc , top - dimroc), (middle + roc , top - dimroc)]
+points = [(middle, top), (middle - dimroc , top - dimroc), (middle + dimroc , top - dimroc)]
 
 # Current time, height, speed & fuel_supply
 print ("Time = {:.1f}s, Height = {:.0f}m, Descent speed = {:.2f}m/s, Fuel {:.2f}kg".
@@ -65,23 +65,23 @@ while (height > 0):
 	           format(time, height, speed, fuel_supply))
 	
 	#scale the height to our game window
-        top = prev_height / pericynthion * 600
+        top = prev_height / pericynthion * 600 + 600
 	
 	#hide the old rockets
-        points = [(middle, top), (middle - dimroc , top - dimroc), (middle + roc , top - dimroc)]
+        points = [(middle, top), (middle + dimroc , top + dimroc), (middle - dimroc , top + dimroc)]
         pygame.draw.lines(rocket_area,black,True,points)
         screen.blit(rocket_area, (0, 0))
 	
 	#draw our new rocket
-        top = height / pericynthion * 600
-        points = [(middle, top), (middle - dimroc , top - dimroc), (middle + roc , top - dimroc)]
+        top = height / pericynthion * 600 + 600
+        points = [(middle, top), (middle + dimroc , top + dimroc), (middle - dimroc , top + dimroc)]
         pygame.draw.lines(rocket_area,red,True,points)
         screen.blit(rocket_area, (0, 0))
 	
         pygame.display.update()	
 	
         if height < 0.0:
-	    break
+            break
         
 if abs(speed) < max_impact_speed:
     print("Landed!")
