@@ -7,17 +7,12 @@ screen = pygame.display.set_mode((300,600))
 
 grey = pygame.Color(200,200,200)
 red = pygame.Color(255,0,0)
-
-points = [(150, 0), (145, 5), (155, 5)]
+black = pygame.Color(0,0,0)
+top = 0
+middle = 150
+dimroc = 5
 
 rocket_area = pygame.Surface((300,600))
-
-pygame.draw.lines(rocket_area,red,True,points)
-
-screen.blit(rocket_area, (0, 0))
-
-pygame.display.update()
-
 
 # Physics and lander constants
 gravity_0 = 1.62      # Moon's gravity at surface
@@ -35,6 +30,7 @@ time_step = 1.0       # Simulation time step (s)
 time = 0.0
 height = pericynthion
 speed = 0.0
+points = [(middle, top), (middle - dimroc , top - dimroc), (middle + roc , top - dimroc)]
 
 # Current time, height, speed & fuel_supply
 print ("Time = {:.1f}s, Height = {:.0f}m, Descent speed = {:.2f}m/s, Fuel {:.2f}kg".
@@ -58,6 +54,7 @@ while (height > 0):
         time = time + time_step
         thrust = min(thrust, fuel_supply / (burn_rate * time_step))
         speed = speed + (gravity_0 - thrust * DPS_thrust / LM_mass) * time_step
+	prev_height = height
         height = height - speed * time_step
         fuel_used = thrust * burn_rate * time_step
         fuel_supply = fuel_supply - fuel_used
@@ -66,10 +63,27 @@ while (height > 0):
         # Current time, height, speed & fuel_supply
         print ("Time = {:.1f}s, Height = {:.0f}m, Descent speed = {:.2f}m/s, Fuel {:.2f}kg".
 	           format(time, height, speed, fuel_supply))
-
+	
+	#scale the height to our game window
+	top = prev_height / pericynthion * 600
+	
+	#hide the old rockets
+	points = [(middle, top), (middle - dimroc , top - dimroc), (middle + roc , top - dimroc)]
+	pygame.draw.lines(rocket_area,black,True,points)
+	screen.blit(rocket_area, (0, 0))
+	
+	#draw our new rocket
+	top = height / pericynthion * 600
+	points = [(middle, top), (middle - dimroc , top - dimroc), (middle + roc , top - dimroc)]
+	pygame.draw.lines(rocket_area,red,True,points)
+	screen.blit(rocket_area, (0, 0))
+	
+	pygame.display.update()	
+	
         if height < 0.0:
-            break
-
+            #explosion.gif
+	    break
+	
 if abs(speed) < max_impact_speed:
     print("Landed!")
 else:
