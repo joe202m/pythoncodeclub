@@ -1,6 +1,24 @@
 '''Moon Lander Game 1
    Simple text-based version of a moon landing game. 1D with minimal physics.
 '''
+import pygame
+
+screen = pygame.display.set_mode((300,600))
+
+grey = pygame.Color(200,200,200)
+red = pygame.Color(255,0,0)
+
+points = [(150, 0), (145, 5), (155, 5)]
+
+rocket_area = pygame.Surface((300,600))
+
+pygame.draw.lines(rocket_area,red,True,points)
+
+screen.blit(rocket_area, (0, 0))
+
+pygame.display.update()
+
+
 # Physics and lander constants
 gravity_0 = 1.62      # Moon's gravity at surface
 LM_mass = 15.2e3      # Launch mass of LM (15.2 tonnes)
