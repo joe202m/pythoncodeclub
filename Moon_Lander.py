@@ -10,9 +10,10 @@ red = pygame.Color(255,0,0)
 black = pygame.Color(0,0,0)
 top = 0
 middle = 150
-dimroc = 5
+dimroc = 10
 
 rocket_area = pygame.Surface((300,600))
+fuel_gauge = pygame.Surface((50,300))
 
 # Physics and lander constants
 gravity_0 = 1.62      # Moon's gravity at surface
@@ -32,9 +33,14 @@ height = pericynthion
 speed = 0.0
 points = [(middle, top), (middle - dimroc , top - dimroc), (middle + dimroc , top - dimroc)]
 
+
 # Current time, height, speed & fuel_supply
 print ("Time = {:.1f}s, Height = {:.0f}m, Descent speed = {:.2f}m/s, Fuel {:.2f}kg".
 	   format(time, height, speed, fuel_supply))
+
+# Draw fuel gauge window
+pygame.draw.rect(fuel_gauge,grey,(10,10,10,300))
+
 
 		   # Loop until landed or crashed
 while (height > 0):
@@ -77,6 +83,11 @@ while (height > 0):
         points = [(middle, 600-top), (middle + dimroc , 600-top + dimroc), (middle - dimroc , 600- top + dimroc)]
         pygame.draw.lines(rocket_area,red,True,points)
         screen.blit(rocket_area, (0, 0))
+
+
+        # Draw fuel reduction
+        pygame.draw.rect(fuel_gauge,black,(10,10,10,300 - (fuel_supply / 900 * 300)))
+        screen.blit(fuel_gauge,(0,0))
 	
         pygame.display.update()	
 	
