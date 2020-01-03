@@ -4,9 +4,6 @@
 import sys, pygame
 pygame.init()
 
-lander = pygame.image.load("lunar-module-lander.jpg")
-ship_rect = lander.get_rect()
-
 scr_size = 1000, 800
 black = 0, 0, 0
 white = 255, 255, 255
@@ -18,17 +15,24 @@ background.fill((255, 255, 255))
 
 def print_pg (text, text_y):
     font = pygame.font.Font(None, 24)
-    text = font.render(text, 1, (10, 10, 10))
-    pygame.draw.rect(background, white, (0, text_y - 12, 500, 24))
-    textpos = text.get_rect(left = 20, centery = text_y)
-    background.blit(text, textpos)
+    for line in text:
+        line = font.render(line, 1, (10, 10, 10))
+        pygame.draw.rect(background, white, (0, text_y - 12, 500, 24))
+        textpos = line.get_rect(left = 20, centery = text_y)
+        background.blit(line, textpos)
+        text_y += 24
     screen.blit(background, (0, 0))
     pygame.display.flip()
+
+lander = pygame.image.load("lunar-module-lander.jpg")
+lander_rect = lander.get_rect()
 
 # Physics and lander constants
 gravity_0 = 1.62      # Moon's gravity at surface
 LM_mass = 15.2e3      # Launch mass of LM (15.2 tonnes)
 DPS_thrust =  45.04e3 # Descent propulsion system full power thrust (N)
+burn_rate = 7.5       # Fuel use at 100% thrust, kg/s
+fuel_supply = 900     # Fuel available for descent
 throttle_min = 0.1
 throttle_max = 0.6    # DPS engine can be throttled between 10% & 60% of full thrust
 pericynthion = 15.0e3 # Lowest point in Lunar orbit - descend from here
@@ -43,9 +47,9 @@ time = 0.0
 
 # Loop until landed or crashed
 while (height > 0):
-    # Current height, speed
-    print_pg("Time = {0:.1f} s, Height = {1:.0f} m".format(time, height), 12)
-    print_pg("Thrust = {0:.0f} N, Descent speed = {1:.2f} m/s".format(thrust * DPS_thrust, speed), 36)
+    # Current time, height, thrust & speed
+    print_pg("Time = {:.1f} s\nHeight = {:.0f} m\nThrust = {:.0f} N\nDescent speed = {:.2f} m/s\nFuel = {:.1f} kg".
+             format(time, height, thrust * DPS_thrust, speed, fuel), 12)
 
     # Thrust must be 10% - 60% or 100%
     for event in pygame.event.get():
@@ -69,15 +73,23 @@ while (height > 0):
      #  thrust_time = float(input("Thrust time (s)? "))
     
     for ii in range(int(thrust_time // time_step)):
+        prev_height = height
+        thrust = min(thrust, fuel_supply / (burn_rate * time_step))
         speed = speed + (gravity_0 - thrust * DPS_thrust / LM_mass) * time_step
         height = height - speed * time_step
+        fuel_used = thrust * burn_rate * time_step
+        fuel_supply = fuel_supply - fuel_used
+        LM_mass = LM_mass - fuel_used
+
+        lander_rect = lander_rect.move([0, (height - prev_height) * scr_height / pericynthion])
+
         if (height < 0.0):
             break
 
-    pygame.time.delay(1000)
+    pygame.time.delay(thrust_time * 1000)
 
-print_pg("Time = {0:.1f} s, Height = {1:.0f} m".format(time, height), 12)
-print_pg("Thrust = {0:.0f} N, Descent speed = {1:.2f} m/s".format(thrust * DPS_thrust, speed), 36)
+print_pg("Time = {:.1f} s\nHeight = {:.0f} m\nThrust = {:.0f} N\nDescent speed = {:.2f} m/s\nFuel = {:.1f} kg".
+         format(time, height, thrust * DPS_thrust, speed, fuel), 12)
 
 if abs(speed) < max_impact_speed:
     print_pg("Landed!", 60)
