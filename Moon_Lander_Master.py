@@ -5,22 +5,27 @@ import sys, pygame
 pygame.init()
 
 scr_size = 1000, 800
+scr_height = 800
 black = 0, 0, 0
 white = 255, 255, 255
 
 screen = pygame.display.set_mode(scr_size)
 background = pygame.Surface(screen.get_size())
 background = background.convert()
-background.fill((255, 255, 255))
+background.fill((0, 0, 0))
 
 def print_pg (text, text_y):
     font = pygame.font.Font(None, 24)
-    for line in text:
-        line = font.render(line, 1, (10, 10, 10))
-        pygame.draw.rect(background, white, (0, text_y - 12, 500, 24))
+    for text_line in text.split("\n"):
+        line = font.render(text_line, 1, (128, 255, 128))
+        pygame.draw.rect(background, black, (0, text_y - 12, 250, 24))
         textpos = line.get_rect(left = 20, centery = text_y)
         background.blit(line, textpos)
         text_y += 24
+
+def display_lander(lander, height):
+    pygame.draw.rect(background, black, (251, 0, 750, 800))
+    background.blit(lander, (450, height * 800 / pericynthion))
     screen.blit(background, (0, 0))
     pygame.display.flip()
 
@@ -49,7 +54,8 @@ time = 0.0
 while (height > 0):
     # Current time, height, thrust & speed
     print_pg("Time = {:.1f} s\nHeight = {:.0f} m\nThrust = {:.0f} N\nDescent speed = {:.2f} m/s\nFuel = {:.1f} kg".
-             format(time, height, thrust * DPS_thrust, speed, fuel), 12)
+             format(time, height, thrust * DPS_thrust, speed, fuel_supply), 12)
+    display_lander(lander, height)
 
     # Thrust must be 10% - 60% or 100%
     for event in pygame.event.get():
@@ -86,10 +92,10 @@ while (height > 0):
         if (height < 0.0):
             break
 
-    pygame.time.delay(thrust_time * 1000)
+    pygame.time.delay(int(thrust_time * 1000))
 
 print_pg("Time = {:.1f} s\nHeight = {:.0f} m\nThrust = {:.0f} N\nDescent speed = {:.2f} m/s\nFuel = {:.1f} kg".
-         format(time, height, thrust * DPS_thrust, speed, fuel), 12)
+         format(time, height, thrust * DPS_thrust, speed, fuel_supply), 12)
 
 if abs(speed) < max_impact_speed:
     print_pg("Landed!", 60)
