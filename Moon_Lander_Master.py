@@ -14,22 +14,24 @@ background = pygame.Surface(screen.get_size())
 background = background.convert()
 background.fill((0, 0, 0))
 
-def print_pg (text, text_y):
-    font = pygame.font.Font(None, 24)
+def print_pg(text, text_y,text_size=24):
+    font = pygame.font.Font(None, text_size)
     for text_line in text.split("\n"):
         line = font.render(text_line, 1, (128, 255, 128))
-        pygame.draw.rect(background, black, (0, text_y - 12, 250, 24))
+        pygame.draw.rect(background, black, (0, text_y - 12, 250, text_size))
         textpos = line.get_rect(left = 20, centery = text_y)
         background.blit(line, textpos)
-        text_y += 24
+        text_y += text_size
+        print (textpos)
 
 def display_lander(lander, height):
     pygame.draw.rect(background, black, (251, 0, 750, 800))
-    background.blit(lander, (450, height * 800 / pericynthion))
+    background.blit(lander, (450, 800 - height * 800 / pericynthion - 45))
     screen.blit(background, (0, 0))
     pygame.display.flip()
 
-lander = pygame.image.load("lunar-module-lander.jpg")
+lander = pygame.image.load("Apollo_LunarModule.png")
+lander = pygame.transform.scale(lander, (58, 45))
 lander_rect = lander.get_rect()
 
 # Physics and lander constants
@@ -87,19 +89,24 @@ while (height > 0):
         fuel_supply = fuel_supply - fuel_used
         LM_mass = LM_mass - fuel_used
 
-        lander_rect = lander_rect.move([0, (height - prev_height) * scr_height / pericynthion])
 
-        if (height < 0.0):
+        if (height <= 0.0):
             break
 
-    pygame.time.delay(int(thrust_time * 1000))
-
+    pygame.time.delay(int(thrust_time * 10))
+        
 print_pg("Time = {:.1f} s\nHeight = {:.0f} m\nThrust = {:.0f} N\nDescent speed = {:.2f} m/s\nFuel = {:.1f} kg".
          format(time, height, thrust * DPS_thrust, speed, fuel_supply), 12)
 
 if abs(speed) < max_impact_speed:
-    print_pg("Landed!", 60)
+    print_pg("Landed!", 180,120)
 else:
-    print_pg("Oops!!", 60)
+    print_pg("Oops!!", 180,120)
 
+display_lander(lander, height)
+
+print (speed)
+print (max_impact_speed)
+print (height)
 pygame.time.delay(5000)
+
