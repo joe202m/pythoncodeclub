@@ -2,6 +2,8 @@
    PyGame version of a moon landing game. 1D with physics.
 '''
 import sys, pygame
+from math import sqrt
+
 pygame.init()
 
 # Size of window to use
@@ -12,7 +14,7 @@ scr_height = scr_size[1]
 black = 0, 0, 0
 white = 255, 255, 255
 green = 128, 255, 128
-red = 255, 128, 128
+red = 255, 64, 64
 
 # Set up screen, define & fill background
 screen = pygame.display.set_mode(scr_size)
@@ -33,11 +35,25 @@ def print_pg(text, text_y, text_size=24, colour=green):
 # Display the lander at the correct height and refresh the screen
 def display_lander(lander, height):
     pygame.draw.rect(background, black, (251, 0, 750, scr_height))
-    background.blit(lander, (450, scr_height * (1.0 - height) / screen_scales[zoom] - 45))
+    background.blit(lander, (450, scr_height * (1.0 - height / screen_scales[zoom])))
     screen.blit(background, (0, 0))
     pygame.display.flip()
+
+def set_status(time, height, thrust, speed, fuel_supply):
+    sq_term = speed**2 - 2.0 * height * thrust
+    if (sq_term > 0.0):
+        sq_term = sqrt(sq_term)
+    else:
+        sq_term = 0.0
+    land_time = (speed - sq_term) / max(thrust, 0.01)
+
+    print_pg(("Time = {:.1f} s\nHeight = {:.0f} m\nThrust = {:.0f} N\nDescent speed = {:.2f} m/s\nFuel = {:.1f} kg\n" +
+              "Land in {:.1f} s").
+             format(time, height, thrust, speed, fuel_supply, land_time), 12)
+ 
+
 # Lunar module picture
-lander = pygame.image.load("Apollo_LunarModule.png")
+lander_init = pygame.image.load("Apollo_LunarModule.png")
 
 # Different scales for the background and lander.
 # Background scale factors ~4 between levels, lander scale factors ~1.6 - only realistic on final scale
@@ -59,23 +75,26 @@ time_step = 1         # Simulation time step (s)
 # Initial conditions
 height = pericynthion
 speed = 0.0
+throttle = 0.0
 thrust = 0.0
 time = 0.0
+
 
 # Loop until landed or crashed, zooming in as we go
 for zoom in range(6):
     # Scale lander as we zoom in
-    lander = pygame.transform.scale(lander, lander_scales[zoom])
+    lander = pygame.transform.scale(lander_init, lander_scales[zoom])
+    print (lander_scales[zoom])
+    print (screen_scales[zoom])
     lander_rect = lander.get_rect()
 
     # When lander reaches ~ bottom 1/4 of the screen zoom in
     while (height > screen_scales[zoom + 1]):
         # Current time, height, thrust & speed
-        print_pg("Time = {:.1f} s\nHeight = {:.0f} m\nThrust = {:.0f} N\nDescent speed = {:.2f} m/s\nFuel = {:.1f} kg".
-                 format(time, height, thrust * DPS_thrust, speed, fuel_supply), 12)
+        set_status(time, height, thrust * DPS_thrust, speed, fuel_supply)
         display_lander(lander, height)
 
-        # Thrust must be off, 10% - 60% or 100%
+        # throttle must be off, 10% - 60% or 100%
         for event in pygame.event.get():
                 
             # determine if X was clicked, or Ctrl+W or Alt+F4 was used
@@ -85,11 +104,40 @@ for zoom in range(6):
                 if event.key == pygame.K_ESCAPE:
                     break
             
-                # determine if a letter key was pressed
+                # determine if a key was pressed
                 if event.key == pygame.K_b:
-                    thrust = 1.0
-                elif event.key == pygame.K_0:
-                    thrust = 0.0
+                    throttle = 1.0
+                elif event.key == pygame.K_KP0:
+                    throttle = 0.0
+                elif event.key == pygame.K_KP1:
+                    throttle = 0.1
+                elif event.key == pygame.K_KP2:
+                    throttle = 0.2
+                elif event.key == pygame.K_KP3:
+                    throttle = 0.3
+                elif event.key == pygame.K_KP4:
+                    throttle = 0.4
+                elif event.key == pygame.K_KP5:
+                    throttle = 0.5
+                elif event.key == pygame.K_KP6:
+                    throttle = 0.6
+                elif event.key == pygame.K_KP8:
+                    throttle = 1.0
+                elif event.key == pygame.K_KP9:
+                    throttle = 1.0
+                elif event.key == pygame.K_KP_PLUS:
+                    throttle += 0.01
+                elif event.key == pygame.K_KP_MINUS:
+                    throttle -= 0.01
+                
+                if (throttle < 0.05):
+                    throttle = 0.0
+                elif (throttle > 0.8):
+                    throttle = 1.0
+                else:
+                    throttle = min(max(throttle, throttle_min), throttle_max)
+
+                print (throttle)
      
         thrust_time = 1.0
         time += time_step
@@ -100,7 +148,7 @@ for zoom in range(6):
             # Estimate increase of thrust due to ground effect (reflected gasses) [+50% at 20m]
             ground_effect = (40.0 + height) / (20.0 + height)
             # Check to see if fuel will run out during the time step
-            thrust = min(thrust, fuel_supply / (burn_rate * time_step)) * ground_effect
+            thrust = min(throttle, fuel_supply / (burn_rate * time_step)) * ground_effect
             # Convert thrust to acceleration and subtract from gravity
             speed = speed + (gravity_0 - thrust * DPS_thrust / LM_mass) * time_step
             height = height - speed * time_step
@@ -116,13 +164,12 @@ for zoom in range(6):
         pygame.time.delay(int(thrust_time * 100))
         
 # Final status and result message
-print_pg("Time = {:.1f} s\nHeight = {:.0f} m\nThrust = {:.0f} N\nDescent speed = {:.2f} m/s\nFuel = {:.1f} kg".
-         format(time, height, thrust * DPS_thrust, speed, fuel_supply), 12)
+set_status(time, height, thrust * DPS_thrust, speed, fuel_supply)
 
 if abs(speed) < max_impact_speed:
-    print_pg("Landed!", 180, 120, white)
+    print_pg("Landed!", 360, 120, white)
 else:
-    print_pg("Oops!!", 180, 120, red)
+    print_pg("Oops!!", 360, 120, red)
 
 display_lander(lander, height)
 
