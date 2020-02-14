@@ -2,25 +2,40 @@
    PyGame version of a moon landing game. 1D with physics.
 '''
 import sys, pygame
-from math import sqrt
+from math import sqrt, pi
 
 pygame.init()
 
 # Size of window to use
-scr_size = 1000, 800
-scr_height = scr_size[1]
+scr_size = 1000, 850
+scr_height = scr_size[1] - 50
 
 # Define some colour RGB tuples
 black = 0, 0, 0
 white = 255, 255, 255
+grey = 128, 128, 128
 green = 128, 255, 128
 red = 255, 64, 64
 
 # Set up screen, define & fill background
 screen = pygame.display.set_mode(scr_size)
-background = pygame.Surface(screen.get_size())
+background = pygame.Surface((1000,800))
 background = background.convert()
 background.fill(black)
+
+moon = pygame.Surface((1000,50))
+moon = moon.convert()
+moon.fill(black)
+
+def draw_moon():
+    #pygame.draw.arc(moon,white,[0,0,1000,100], pi/4, 3*pi/4,4)
+    #pygame.draw.ellipse(moon,white,[0,0,1000,400],200)
+    #pygame.draw.circle(moon,white,(500,500), 500,4)
+    pygame.draw.rect(moon, grey, (0, 0, 1000, 50))
+    screen.blit(moon,(0,800))
+    pygame.display.flip()
+
+draw_moon()
 
 # Print lines of text to the graphics area (LHS)
 def print_pg(text, text_y, text_size=24, colour=green):
@@ -35,21 +50,28 @@ def print_pg(text, text_y, text_size=24, colour=green):
 # Display the lander at the correct height and refresh the screen
 def display_lander(lander, height):
     pygame.draw.rect(background, black, (251, 0, 750, scr_height))
-    background.blit(lander, (450, scr_height * (1.0 - height / screen_scales[zoom])))
+    background.blit(lander, (500 - lander_scales[zoom][0] / 2,
+                    scr_height * (1.0 - height / screen_scales[zoom])))
     screen.blit(background, (0, 0))
     pygame.display.flip()
 
-def set_status(time, height, thrust, speed, fuel_supply):
-    sq_term = speed**2 - 2.0 * height * thrust
+# Display status informatio on the screen
+def set_status(time, height, throttle, thrust, speed, fuel_supply, accn):
+    # Calculate the time to zero height using the quadratic formula
+    sq_term = speed**2 + 2.0 * height * accn
     if (sq_term > 0.0):
-        sq_term = sqrt(sq_term)
+        land_time = (-speed + sqrt(sq_term)) / accn
+        land_vel = speed + land_time * accn
     else:
-        sq_term = 0.0
-    land_time = (speed - sq_term) / max(thrust, 0.01)
+        land_time = 9999.0
+        land_vel = 9999.0
 
-    print_pg(("Time = {:.1f} s\nHeight = {:.0f} m\nThrust = {:.0f} N\nDescent speed = {:.2f} m/s\nFuel = {:.1f} kg\n" +
-              "Land in {:.1f} s").
-             format(time, height, thrust, speed, fuel_supply, land_time), 12)
+    turnover_ht = height + 0.5 * speed**2 / accn
+    print_pg(("Time = {:.1f} s\nHeight = {:.0f} m\nThrottle = {:.0f} %\nThrust = {:.0f} N\n" +
+              "Descent speed = {:.2f} m/s\nAccelleration = {:.2f} m/s/s\nFuel = {:.1f} kg\n" +
+              "Land in  {:.1f} s\nLanding speed = {:.2f} m/s\nT/over height = {:.0f} m").
+             format(time, height, throttle * 100.0, thrust, speed, accn, fuel_supply, land_time,
+                    land_vel, turnover_ht), 12)
  
 
 # Lunar module picture
@@ -70,7 +92,7 @@ throttle_min = 0.1
 throttle_max = 0.6    # DPS engine can be throttled between 10% & 60% of full thrust
 pericynthion = 15.0e3 # Lowest point in Lunar orbit - descend from here
 max_impact_speed = 10 # Gives ~ 3g over 1.7m
-time_step = 1         # Simulation time step (s)
+time_step = 0.1       # Simulation time step (s)
 
 # Initial conditions
 height = pericynthion
@@ -78,22 +100,23 @@ speed = 0.0
 throttle = 0.0
 thrust = 0.0
 time = 0.0
+accn = gravity_0
 
 
 # Loop until landed or crashed, zooming in as we go
 for zoom in range(6):
     # Scale lander as we zoom in
     lander = pygame.transform.scale(lander_init, lander_scales[zoom])
-    print (lander_scales[zoom])
-    print (screen_scales[zoom])
+#    print (lander_scales[zoom])
+#    print (screen_scales[zoom])
     lander_rect = lander.get_rect()
 
     # When lander reaches ~ bottom 1/4 of the screen zoom in
     while (height > screen_scales[zoom + 1]):
         # Current time, height, thrust & speed
-        set_status(time, height, thrust * DPS_thrust, speed, fuel_supply)
+        set_status(time, height, throttle, thrust * DPS_thrust, speed, fuel_supply, accn)
         display_lander(lander, height)
-
+        
         # throttle must be off, 10% - 60% or 100%
         for event in pygame.event.get():
                 
@@ -139,7 +162,7 @@ for zoom in range(6):
 
                 print (throttle)
      
-        thrust_time = 1.0
+        thrust_time = 0.1
         time += time_step
         #while (thrust_time < 0):
          #  thrust_time = float(input("Thrust time (s)? "))
@@ -150,26 +173,27 @@ for zoom in range(6):
             # Check to see if fuel will run out during the time step
             thrust = min(throttle, fuel_supply / (burn_rate * time_step)) * ground_effect
             # Convert thrust to acceleration and subtract from gravity
-            speed = speed + (gravity_0 - thrust * DPS_thrust / LM_mass) * time_step
-            height = height - speed * time_step
+            accn = (gravity_0 - thrust * DPS_thrust / LM_mass)
+            speed += accn * time_step
+            height -= speed * time_step
             # Subtract fuel used, from supply and module mass
             fuel_used = thrust * burn_rate * time_step
-            fuel_supply = fuel_supply - fuel_used
-            LM_mass = LM_mass - fuel_used
+            fuel_supply -= fuel_used
+            LM_mass -= fuel_used
 
             if (height <= screen_scales[zoom + 1]):
                 break
 
         # Wait for thrust_time seconds
-        pygame.time.delay(int(thrust_time * 100))
+        pygame.time.delay(int(thrust_time * 250))
         
 # Final status and result message
-set_status(time, height, thrust * DPS_thrust, speed, fuel_supply)
+set_status(time, height, throttle, thrust * DPS_thrust, speed, fuel_supply, accn)
 
 if abs(speed) < max_impact_speed:
-    print_pg("Landed!", 360, 120, white)
+    print_pg("Landed!", 360, 84, white)
 else:
-    print_pg("Oops!!", 360, 120, red)
+    print_pg("Oops!!", 360, 84, red)
 
 display_lander(lander, height)
 
